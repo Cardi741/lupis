@@ -87,6 +87,14 @@ function showScreen(screenId) {
     screens[screenId].classList.remove('hidden');
 }
 
+// Timeout helper per Firebase
+function withTimeout(promise, ms, operationName) {
+    const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`Timeout operazione: ${operationName}`)), ms);
+    });
+    return Promise.race([promise, timeout]);
+}
+
 // Reset App logic
 buttons.reset.addEventListener('click', () => {
     if (confirm("Vuoi davvero resettare l'app? Perderai la connessione alla stanza attuale.")) {
@@ -126,15 +134,20 @@ buttons.createRoom.addEventListener('click', async () => {
     myPlayerId = 'p1';
 
     try {
-        await db.collection('rooms').doc(roomId).set({
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'lobby',
-            phase: 'Preparazione',
-            narrator: playerName,
-            players: {
-                'p1': { name: playerName, role: 'Narratore', alive: true }
-            }
-        });
+        console.log("Eseguo set() su Firestore...");
+        await withTimeout(
+            db.collection('rooms').doc(roomId).set({
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'lobby',
+                phase: 'Preparazione',
+                narrator: playerName,
+                players: {
+                    'p1': { name: playerName, role: 'Narratore', alive: true }
+                }
+            }),
+            10000,
+            "Creazione Stanza"
+        );
 
         console.log("Stanza creata con successo:", roomId);
 
