@@ -1,18 +1,5 @@
-// Debug Logger per l'utente
-const debugContent = document.getElementById('debug-content');
-function logToUI(msg) {
-    console.log("[DEBUG]", msg);
-    if (debugContent) {
-        const div = document.createElement('div');
-        div.textContent = `> ${msg}`;
-        debugContent.appendChild(div);
-        debugContent.scrollTop = debugContent.scrollHeight;
-    }
-}
-
 // Global error catcher for debugging on mobile
 window.onerror = function(message, source, lineno, colno, error) {
-    logToUI("ERRORE CRITICO: " + message);
     alert("ERRORE JS: " + message + "\nIn: " + source + " linea: " + lineno);
     return false;
 };
@@ -45,28 +32,18 @@ const GAME_PHASES = [
 ];
 
 let db;
-logToUI("Inizializzazione Firebase...");
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    logToUI("Firebase OK. Firestore OK.");
-
-    // Verifica se Firestore è effettivamente accessibile
-    if (!db || typeof db.collection !== 'function') {
-        logToUI("ATTENZIONE: Firestore non sembra inizializzato correttamente.");
-    }
 } catch (e) {
-    logToUI("ERRORE INIT: " + e.message);
     alert("Errore inizializzazione Firebase: " + e.message);
 }
 
 // Abilita persistenza offline se possibile e long polling per reti mobili instabili
 try {
-    logToUI("Configurazione Long Polling...");
     db.settings({ experimentalForceLongPolling: true });
-    logToUI("Long Polling configurato.");
 } catch (e) {
-    logToUI("Nota: Long Polling non supportato.");
+    console.warn("Could not set long polling:", e);
 }
 
 // Variabili di stato globale
@@ -144,22 +121,16 @@ buttons.reset.addEventListener('click', () => {
 
 // Test Database logic
 buttons.testDB.addEventListener('click', async () => {
-    logToUI("Avvio TEST connessione...");
-    if (!db) return logToUI("ERRORE: db non inizializzato");
+    if (!db) return alert("ERRORE: db non inizializzato");
 
     try {
-        logToUI("Tentativo scrittura su collezione 'test'...");
         await db.collection('test_connection').add({
             time: Date.now(),
             msg: "Test da app"
         });
-        logToUI("✅ TEST SCRITTURA OK!");
         alert("Connessione riuscita! Se la creazione stanza fallisce ancora, è un problema di permessi specifici su 'rooms'.");
     } catch (e) {
-        logToUI("❌ TEST FALLITO: " + e.code);
-        logToUI("Dettaglio: " + e.message);
         console.error(e);
-
         if (e.code === 'permission-denied') {
             alert("ERRORE: Permessi negati. Devi impostare le regole di Firestore su 'Test Mode'.");
         } else {
@@ -191,16 +162,12 @@ buttons.createRoom.addEventListener('click', async () => {
     buttons.createRoom.disabled = true;
     buttons.createRoom.textContent = "Creazione in corso...";
 
-    logToUI(`Creazione stanza per ${playerName}...`);
-
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     currentRoomId = roomId;
     isNarrator = true;
     myPlayerId = 'p1';
 
     try {
-        logToUI("Invio dati a Firestore (Collezione 'rooms')...");
-
         // Prima proviamo senza timeout per vedere se Firebase ci dà un errore specifico (es. permessi)
         // Il timeout lo mettiamo solo come rete di sicurezza
         const creationPromise = db.collection('rooms').doc(roomId).set({
@@ -214,8 +181,6 @@ buttons.createRoom.addEventListener('click', async () => {
         });
 
         await withTimeout(creationPromise, 10000, "Creazione Stanza");
-
-        logToUI("Stanza creata! ID: " + roomId);
 
         localStorage.setItem('lupus_roomId', roomId);
         localStorage.setItem('lupus_myPlayerId', 'p1');
@@ -352,8 +317,8 @@ buttons.startGame.addEventListener('click', async () => {
 
         await roomRef.update(updates);
     } catch (error) {
-        logToUI("ERRORE START: " + error.message);
         console.error("Errore inizio gioco:", error);
+        alert("Errore nell'avvio del gioco: " + error.message);
     }
 });
 
