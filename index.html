@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lupus in Tabula</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>🐺 Lupus in Tabula</h1>
+        </header>
+
+        <!-- Schermata Iniziale -->
+        <section id="setup-screen" class="screen">
+            <div class="card">
+                <h2>Benvenuto</h2>
+                <input type="text" id="player-name" placeholder="Il tuo nome">
+                <div class="actions">
+                    <button id="btn-create-room">Crea Stanza</button>
+                    <div class="divider">o</div>
+                    <input type="text" id="room-id" placeholder="Codice Stanza">
+                    <button id="btn-join-room">Entra</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lobby -->
+        <section id="lobby-screen" class="screen hidden">
+            <div class="card">
+                <h2>Stanza: <span id="display-room-id">---</span></h2>
+                <div id="players-list-container">
+                    <h3>Giocatori:</h3>
+                    <ul id="players-list"></ul>
+                </div>
+                <div id="narrator-controls" class="hidden">
+                    <button id="btn-start-game">Inizia Gioco</button>
+                </div>
+                <p id="waiting-msg">In attesa che il narratore inizi...</p>
+            </div>
+        </section>
+
+        <!-- Gioco -->
+        <section id="game-screen" class="screen hidden">
+            <div class="card">
+                <div id="role-reveal-container">
+                    <h2>Il tuo Ruolo:</h2>
+                    <div id="role-card" class="role-card hidden-role">
+                        <span id="role-name">???</span>
+                    </div>
+                    <button id="btn-reveal-role">Premi per rivelare</button>
+                </div>
+
+                <div id="game-status">
+                    <h3 id="game-phase">Fase: ---</h3>
+                    <div id="game-info"></div>
+                </div>
+
+                <!-- Controlli Narratore in gioco -->
+                <div id="game-narrator-controls" class="hidden">
+                    <hr>
+                    <h3>Controlli Narratore</h3>
+                    <button id="btn-next-phase">Prossima Fase</button>
+                    <div id="players-management">
+                        <h4>Gestione Giocatori</h4>
+                        <ul id="manage-players-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Firebase SDK (v9 compat or latest) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script src="app.js"></script>
+</body>
+</html>
