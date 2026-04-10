@@ -197,6 +197,20 @@ button.secondary {
     font-size: 0.8rem;
 }
 
+.btn-group {
+    display: flex;
+    gap: 5px;
+}
+
+.remove-btn {
+    background-color: #333 !important;
+    border: 1px solid #555 !important;
+}
+
+#btn-leave-room {
+    margin-top: 20px;
+}
+
 .dead {
     text-decoration: line-through;
     opacity: 0.5;

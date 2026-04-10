@@ -79,7 +79,8 @@ const buttons = {
     nextPhase: document.getElementById('btn-next-phase'),
     reset: document.getElementById('btn-reset'),
     testDB: document.getElementById('btn-test-db'),
-    newGame: document.getElementById('btn-new-game')
+    newGame: document.getElementById('btn-new-game'),
+    leaveRoom: document.getElementById('btn-leave-room')
 };
 
 const displays = {
@@ -115,6 +116,35 @@ function withTimeout(promise, ms, operationName) {
 // Reset App logic
 buttons.reset.addEventListener('click', () => {
     if (confirm("Vuoi davvero resettare l'app? Perderai la connessione alla stanza attuale.")) {
+        localStorage.clear();
+        location.reload();
+    }
+});
+
+// Leave Room logic
+buttons.leaveRoom.addEventListener('click', async () => {
+    if (!currentRoomId || !myPlayerId) return;
+    if (!confirm("Vuoi uscire dalla stanza?")) return;
+
+    try {
+        const roomRef = db.collection('rooms').doc(currentRoomId);
+
+        if (isNarrator) {
+            if (confirm("Sei il narratore. Se esci, la stanza verrà chiusa per tutti. Procedere?")) {
+                await roomRef.delete();
+            } else {
+                return;
+            }
+        } else {
+            await roomRef.update({
+                [`players.${myPlayerId}`]: firebase.firestore.FieldValue.delete()
+            });
+        }
+
+        localStorage.clear();
+        location.reload();
+    } catch (error) {
+        console.error("Errore uscita:", error);
         localStorage.clear();
         location.reload();
     }
@@ -258,12 +288,25 @@ buttons.revealRole.addEventListener('click', () => {
 // Listener per la stanza
 function setupRoomListener(roomId) {
     db.collection('rooms').doc(roomId).onSnapshot((doc) => {
-        if (!doc.exists) return;
+        if (!doc.exists) {
+            // Se la stanza viene eliminata (es. dal narratore), torniamo alla home
+            localStorage.clear();
+            location.reload();
+            return;
+        }
         const data = doc.data();
 
         // Se lo stato torna a lobby mentre siamo in gioco, forziamo il ritorno alla lobby
         if (data.status === 'lobby' && !screens.game.classList.contains('hidden')) {
             showScreen('lobby');
+        }
+
+        // Se il mio ID non è più nella lista giocatori (sono stato rimosso o la stanza è resettata male)
+        if (myPlayerId && !data.players[myPlayerId]) {
+            alert("Sei stato rimosso dalla stanza o la sessione è scaduta.");
+            localStorage.clear();
+            location.reload();
+            return;
         }
 
         renderLobby(data.players);
@@ -356,6 +399,20 @@ async function togglePlayerStatus(playerId) {
     });
 }
 
+async function removePlayer(playerId) {
+    if (!isNarrator) return;
+    if (!confirm("Vuoi davvero rimuovere questo giocatore dalla stanza?")) return;
+
+    try {
+        const roomRef = db.collection('rooms').doc(currentRoomId);
+        await roomRef.update({
+            [`players.${playerId}`]: firebase.firestore.FieldValue.delete()
+        });
+    } catch (error) {
+        console.error("Errore rimozione:", error);
+    }
+}
+
 // Nuova Partita / Reset Stanza (Solo Narratore)
 buttons.newGame.addEventListener('click', async () => {
     if (!isNarrator) return;
@@ -439,12 +496,23 @@ function renderManagePlayers(players) {
         const span = document.createElement('span');
         span.textContent = `${p.name} (${p.role})`;
 
-        const btn = document.createElement('button');
-        btn.textContent = p.alive ? 'Uccidi' : 'Resuscita';
-        btn.onclick = () => togglePlayerStatus(id);
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+
+        const btnToggle = document.createElement('button');
+        btnToggle.textContent = p.alive ? 'Uccidi' : 'Resuscita';
+        btnToggle.onclick = () => togglePlayerStatus(id);
+
+        const btnRemove = document.createElement('button');
+        btnRemove.textContent = '❌';
+        btnRemove.className = 'remove-btn';
+        btnRemove.onclick = () => removePlayer(id);
+
+        btnGroup.appendChild(btnToggle);
+        btnGroup.appendChild(btnRemove);
 
         li.appendChild(span);
-        li.appendChild(btn);
+        li.appendChild(btnGroup);
         displays.managePlayersList.appendChild(li);
     });
 }
