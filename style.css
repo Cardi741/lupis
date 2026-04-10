@@ -172,3 +172,23 @@ button.secondary {
     text-decoration: line-through;
     opacity: 0.5;
 }
+
+#debug-overlay {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.8);
+    color: #0f0;
+    font-family: monospace;
+    padding: 10px;
+    font-size: 12px;
+    max-height: 150px;
+    overflow-y: auto;
+    border-top: 1px solid #333;
+    z-index: 9999;
+}
+
+#debug-content div {
+    margin-bottom: 2px;
+}

@@ -1,5 +1,18 @@
+// Debug Logger per l'utente
+const debugContent = document.getElementById('debug-content');
+function logToUI(msg) {
+    console.log("[DEBUG]", msg);
+    if (debugContent) {
+        const div = document.createElement('div');
+        div.textContent = `> ${msg}`;
+        debugContent.appendChild(div);
+        debugContent.scrollTop = debugContent.scrollHeight;
+    }
+}
+
 // Global error catcher for debugging on mobile
 window.onerror = function(message, source, lineno, colno, error) {
+    logToUI("ERRORE CRITICO: " + message);
     alert("ERRORE JS: " + message + "\nIn: " + source + " linea: " + lineno);
     return false;
 };
@@ -23,19 +36,23 @@ if (typeof firebase === 'undefined') {
 
 // Inizializzazione Firebase
 let db;
+logToUI("Inizializzazione Firebase...");
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    console.log("Firebase e Firestore inizializzati correttamente");
+    logToUI("Firebase OK. Firestore OK.");
 } catch (e) {
+    logToUI("ERRORE INIT: " + e.message);
     alert("Errore inizializzazione Firebase: " + e.message);
 }
 
 // Abilita persistenza offline se possibile e long polling per reti mobili instabili
 try {
+    logToUI("Configurazione Long Polling...");
     db.settings({ experimentalForceLongPolling: true });
+    logToUI("Long Polling configurato.");
 } catch (e) {
-    console.warn("Could not set long polling:", e);
+    logToUI("Nota: Long Polling non supportato.");
 }
 
 // Variabili di stato globale
@@ -121,12 +138,12 @@ buttons.createRoom.addEventListener('click', async () => {
     playerName = inputs.playerName.value.trim();
     if (!playerName) return alert("Inserisci il tuo nome!");
 
-    if (!db) return alert("Database non disponibile. Controlla la tua connessione.");
+    if (!db) return alert("ERRORE: Database non inizializzato.");
 
     buttons.createRoom.disabled = true;
     buttons.createRoom.textContent = "Creazione in corso...";
 
-    console.log("Tentativo creazione stanza per:", playerName);
+    logToUI(`Creazione stanza per ${playerName}...`);
 
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     currentRoomId = roomId;
@@ -134,10 +151,10 @@ buttons.createRoom.addEventListener('click', async () => {
     myPlayerId = 'p1';
 
     try {
-        console.log("Eseguo set() su Firestore...");
+        logToUI("Invio dati a Firestore...");
         await withTimeout(
             db.collection('rooms').doc(roomId).set({
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                createdAt: Date.now(), // Usiamo Date.now() per debug, più robusto se ci sono problemi di orologio
                 status: 'lobby',
                 phase: 'Preparazione',
                 narrator: playerName,
@@ -149,7 +166,7 @@ buttons.createRoom.addEventListener('click', async () => {
             "Creazione Stanza"
         );
 
-        console.log("Stanza creata con successo:", roomId);
+        logToUI("Stanza creata! ID: " + roomId);
 
         localStorage.setItem('lupus_roomId', roomId);
         localStorage.setItem('lupus_myPlayerId', 'p1');
