@@ -103,6 +103,14 @@ const containers = {
 function showScreen(screenId) {
     Object.values(screens).forEach(s => s.classList.add('hidden'));
     screens[screenId].classList.remove('hidden');
+
+    // Mostra/nascondi badge narratore
+    const badge = document.getElementById('narrator-badge');
+    if (isNarrator && screenId !== 'setup') {
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
 }
 
 // Timeout helper per Firebase
@@ -124,10 +132,18 @@ buttons.reset.addEventListener('click', () => {
 // Leave Room logic
 buttons.leaveRoom.addEventListener('click', async () => {
     if (!currentRoomId || !myPlayerId) return;
-    if (!confirm("Vuoi uscire dalla stanza?")) return;
 
     try {
         const roomRef = db.collection('rooms').doc(currentRoomId);
+        const doc = await roomRef.get();
+        const data = doc.data();
+
+        // Se la partita è in corso, i giocatori non possono uscire
+        if (data.status === 'playing' && !isNarrator) {
+            return alert("La partita è in corso! Non puoi scappare ora... finisci il gioco!");
+        }
+
+        if (!confirm("Vuoi uscire dalla stanza?")) return;
 
         if (isNarrator) {
             if (confirm("Sei il narratore. Se esci, la stanza verrà chiusa per tutti. Procedere?")) {
