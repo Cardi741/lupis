@@ -10,9 +10,25 @@ const firebaseConfig = {
   measurementId: "G-964EFP2ZN1"
 };
 
+// Verifica che Firebase sia caricato
+if (typeof firebase === 'undefined') {
+    alert("ERRORE: Firebase non è stato caricato. Controlla la tua connessione o se un AdBlock sta bloccando gli script di Google.");
+}
+
 // Inizializzazione Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+} catch (e) {
+    console.error("Firebase init error:", e);
+}
 const db = firebase.firestore();
+
+// Abilita persistenza offline se possibile e long polling per reti mobili instabili
+try {
+    db.settings({ experimentalForceLongPolling: true });
+} catch (e) {
+    console.warn("Could not set long polling:", e);
+}
 
 // Variabili di stato globale
 let currentRoomId = localStorage.getItem('lupus_roomId');
@@ -37,7 +53,8 @@ const buttons = {
     joinRoom: document.getElementById('btn-join-room'),
     startGame: document.getElementById('btn-start-game'),
     revealRole: document.getElementById('btn-reveal-role'),
-    nextPhase: document.getElementById('btn-next-phase')
+    nextPhase: document.getElementById('btn-next-phase'),
+    reset: document.getElementById('btn-reset')
 };
 
 const displays = {
@@ -62,6 +79,14 @@ function showScreen(screenId) {
     screens[screenId].classList.remove('hidden');
 }
 
+// Reset App logic
+buttons.reset.addEventListener('click', () => {
+    if (confirm("Vuoi davvero resettare l'app? Perderai la connessione alla stanza attuale.")) {
+        localStorage.clear();
+        location.reload();
+    }
+});
+
 // Reconnect logic
 window.addEventListener('load', () => {
     if (currentRoomId && myPlayerId) {
@@ -80,6 +105,8 @@ buttons.createRoom.addEventListener('click', async () => {
     playerName = inputs.playerName.value.trim();
     if (!playerName) return alert("Inserisci il tuo nome!");
 
+    console.log("Tentativo creazione stanza per:", playerName);
+
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     currentRoomId = roomId;
     isNarrator = true;
@@ -96,6 +123,8 @@ buttons.createRoom.addEventListener('click', async () => {
             }
         });
 
+        console.log("Stanza creata con successo:", roomId);
+
         localStorage.setItem('lupus_roomId', roomId);
         localStorage.setItem('lupus_myPlayerId', 'p1');
         localStorage.setItem('lupus_isNarrator', 'true');
@@ -107,8 +136,8 @@ buttons.createRoom.addEventListener('click', async () => {
         containers.waitingMsg.classList.add('hidden');
         showScreen('lobby');
     } catch (error) {
-        console.error("Errore creazione stanza:", error);
-        alert("Errore nella creazione della stanza.");
+        console.error("Errore dettagliato creazione stanza:", error);
+        alert("Errore nella creazione della stanza. Controlla la connessione o se hai attivato Firestore nel pannello Firebase.\n\nErrore: " + error.message);
     }
 });
 
