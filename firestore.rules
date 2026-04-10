@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Regole per la collezione 'rooms'
+    match /rooms/{roomId} {
+      // Permette a chiunque di leggere e creare una stanza
+      // In un'app reale useresti l'autenticazione, ma per giocare tra amici
+      // queste regole sono sufficienti per iniziare.
+      allow read, write: if true;
+    }
+
+    // Regole per la collezione di test (usata dal tasto Diagnostica)
+    match /test_connection/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
