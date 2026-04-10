@@ -475,13 +475,34 @@ function updateGameUI(data) {
     const myData = data.players[myPlayerId];
     displays.gamePhase.textContent = data.phase;
 
-    // Logica di Vittoria rimossa come richiesto (100% manuale del narratore)
+    // Controllo Condizioni di Vittoria
+    const alivePlayers = Object.values(data.players).filter(p => p.alive && p.role !== 'Narratore');
+    const aliveLupi = alivePlayers.filter(p => p.role.includes('Lupo'));
+    const aliveOthers = alivePlayers.filter(p => !p.role.includes('Lupo'));
+
+    let victoryMsg = "";
+    if (data.status === 'playing') {
+        if (aliveLupi.length === 0) {
+            victoryMsg = "🏆 VITTORIA VILLICI! Tutti i lupi sono stati eliminati.";
+        } else if (aliveLupi.length >= aliveOthers.length) {
+            victoryMsg = "🐺 VITTORIA LUPI! Hanno raggiunto o superato il numero dei villici.";
+        }
+    }
+
     if (!myData.alive) {
-        displays.gameInfo.textContent = "Sei morto. Spetta ai vivi decidere il tuo destino...";
+        displays.gameInfo.textContent = victoryMsg || "Sei morto. Spetta ai vivi decidere il tuo destino...";
         displays.gameInfo.style.color = "var(--accent-color)";
     } else {
-        displays.gameInfo.textContent = data.gameLog || "";
-        displays.gameInfo.style.color = "var(--text-color)";
+        displays.gameInfo.textContent = victoryMsg || data.gameLog || "";
+        displays.gameInfo.style.color = victoryMsg ? "var(--success-color)" : "var(--text-color)";
+        if (victoryMsg) {
+            displays.gameInfo.style.fontSize = "1.2rem";
+            displays.gameInfo.style.fontWeight = "bold";
+            displays.gameInfo.style.marginTop = "10px";
+        } else {
+            displays.gameInfo.style.fontSize = "1rem";
+            displays.gameInfo.style.fontWeight = "normal";
+        }
     }
 
     if (isNarrator) {
