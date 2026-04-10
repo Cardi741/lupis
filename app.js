@@ -1,3 +1,9 @@
+// Global error catcher for debugging on mobile
+window.onerror = function(message, source, lineno, colno, error) {
+    alert("ERRORE JS: " + message + "\nIn: " + source + " linea: " + lineno);
+    return false;
+};
+
 // Configurazione Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCSU_U5KXsQXaS7mCwjpalPK8uVV855reQ",
@@ -16,12 +22,14 @@ if (typeof firebase === 'undefined') {
 }
 
 // Inizializzazione Firebase
+let db;
 try {
     firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase e Firestore inizializzati correttamente");
 } catch (e) {
-    console.error("Firebase init error:", e);
+    alert("Errore inizializzazione Firebase: " + e.message);
 }
-const db = firebase.firestore();
 
 // Abilita persistenza offline se possibile e long polling per reti mobili instabili
 try {
@@ -105,6 +113,11 @@ buttons.createRoom.addEventListener('click', async () => {
     playerName = inputs.playerName.value.trim();
     if (!playerName) return alert("Inserisci il tuo nome!");
 
+    if (!db) return alert("Database non disponibile. Controlla la tua connessione.");
+
+    buttons.createRoom.disabled = true;
+    buttons.createRoom.textContent = "Creazione in corso...";
+
     console.log("Tentativo creazione stanza per:", playerName);
 
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -138,6 +151,9 @@ buttons.createRoom.addEventListener('click', async () => {
     } catch (error) {
         console.error("Errore dettagliato creazione stanza:", error);
         alert("Errore nella creazione della stanza. Controlla la connessione o se hai attivato Firestore nel pannello Firebase.\n\nErrore: " + error.message);
+    } finally {
+        buttons.createRoom.disabled = false;
+        buttons.createRoom.textContent = "Crea Stanza";
     }
 });
 
