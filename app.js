@@ -79,7 +79,8 @@ const buttons = {
     startGame: document.getElementById('btn-start-game'),
     revealRole: document.getElementById('btn-reveal-role'),
     nextPhase: document.getElementById('btn-next-phase'),
-    reset: document.getElementById('btn-reset')
+    reset: document.getElementById('btn-reset'),
+    testDB: document.getElementById('btn-test-db')
 };
 
 const displays = {
@@ -120,6 +121,32 @@ buttons.reset.addEventListener('click', () => {
     }
 });
 
+// Test Database logic
+buttons.testDB.addEventListener('click', async () => {
+    logToUI("Avvio TEST connessione...");
+    if (!db) return logToUI("ERRORE: db non inizializzato");
+
+    try {
+        logToUI("Tentativo scrittura su collezione 'test'...");
+        await db.collection('test_connection').add({
+            time: Date.now(),
+            msg: "Test da app"
+        });
+        logToUI("✅ TEST SCRITTURA OK!");
+        alert("Connessione riuscita! Se la creazione stanza fallisce ancora, è un problema di permessi specifici su 'rooms'.");
+    } catch (e) {
+        logToUI("❌ TEST FALLITO: " + e.code);
+        logToUI("Dettaglio: " + e.message);
+        console.error(e);
+
+        if (e.code === 'permission-denied') {
+            alert("ERRORE: Permessi negati. Devi impostare le regole di Firestore su 'Test Mode'.");
+        } else {
+            alert("Errore Test: " + e.message);
+        }
+    }
+});
+
 // Reconnect logic
 window.addEventListener('load', () => {
     if (currentRoomId && myPlayerId) {
@@ -151,20 +178,21 @@ buttons.createRoom.addEventListener('click', async () => {
     myPlayerId = 'p1';
 
     try {
-        logToUI("Invio dati a Firestore...");
-        await withTimeout(
-            db.collection('rooms').doc(roomId).set({
-                createdAt: Date.now(), // Usiamo Date.now() per debug, più robusto se ci sono problemi di orologio
-                status: 'lobby',
-                phase: 'Preparazione',
-                narrator: playerName,
-                players: {
-                    'p1': { name: playerName, role: 'Narratore', alive: true }
-                }
-            }),
-            10000,
-            "Creazione Stanza"
-        );
+        logToUI("Invio dati a Firestore (Collezione 'rooms')...");
+
+        // Prima proviamo senza timeout per vedere se Firebase ci dà un errore specifico (es. permessi)
+        // Il timeout lo mettiamo solo come rete di sicurezza
+        const creationPromise = db.collection('rooms').doc(roomId).set({
+            createdAt: Date.now(),
+            status: 'lobby',
+            phase: 'Preparazione',
+            narrator: playerName,
+            players: {
+                'p1': { name: playerName, role: 'Narratore', alive: true }
+            }
+        });
+
+        await withTimeout(creationPromise, 10000, "Creazione Stanza");
 
         logToUI("Stanza creata! ID: " + roomId);
 
