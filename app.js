@@ -1,11 +1,13 @@
-// Configurazione Firebase (l'utente dovrà inserire i propri dati qui)
+// Configurazione Firebase
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCSU_U5KXsQXaS7mCwjpalPK8uVV855reQ",
+  authDomain: "tabula-a5c63.firebaseapp.com",
+  databaseURL: "https://tabula-a5c63-default-rtdb.firebaseio.com",
+  projectId: "tabula-a5c63",
+  storageBucket: "tabula-a5c63.firebasestorage.app",
+  messagingSenderId: "449275965106",
+  appId: "1:449275965106:web:fd7b3ae960ead4f7cb63ab",
+  measurementId: "G-964EFP2ZN1"
 };
 
 // Inizializzazione Firebase
@@ -13,10 +15,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // Variabili di stato globale
-let currentRoomId = null;
-let playerName = "";
-let isNarrator = false;
-let myPlayerId = null;
+let currentRoomId = localStorage.getItem('lupus_roomId');
+let playerName = localStorage.getItem('lupus_playerName') || "";
+let isNarrator = localStorage.getItem('lupus_isNarrator') === 'true';
+let myPlayerId = localStorage.getItem('lupus_myPlayerId');
 
 // Elementi DOM
 const screens = {
@@ -60,6 +62,19 @@ function showScreen(screenId) {
     screens[screenId].classList.remove('hidden');
 }
 
+// Reconnect logic
+window.addEventListener('load', () => {
+    if (currentRoomId && myPlayerId) {
+        setupRoomListener(currentRoomId);
+        displays.roomId.textContent = currentRoomId;
+        if (isNarrator) {
+            containers.narratorLobby.classList.remove('hidden');
+            containers.waitingMsg.classList.add('hidden');
+        }
+        showScreen('lobby');
+    }
+});
+
 // Creazione Stanza
 buttons.createRoom.addEventListener('click', async () => {
     playerName = inputs.playerName.value.trim();
@@ -81,6 +96,11 @@ buttons.createRoom.addEventListener('click', async () => {
             }
         });
 
+        localStorage.setItem('lupus_roomId', roomId);
+        localStorage.setItem('lupus_myPlayerId', 'p1');
+        localStorage.setItem('lupus_isNarrator', 'true');
+        localStorage.setItem('lupus_playerName', playerName);
+
         setupRoomListener(roomId);
         displays.roomId.textContent = roomId;
         containers.narratorLobby.classList.remove('hidden');
@@ -100,21 +120,36 @@ buttons.joinRoom.addEventListener('click', async () => {
     if (!playerName || !roomId) return alert("Inserisci nome e codice stanza!");
 
     try {
-        const roomDoc = await db.collection('rooms').doc(roomId).get();
-        if (!roomDoc.exists) return alert("Stanza non trovata!");
+        const roomRef = db.collection('rooms').doc(roomId);
 
-        const data = roomDoc.data();
-        if (data.status !== 'lobby') return alert("Gioco già iniziato!");
+        await db.runTransaction(async (transaction) => {
+            const roomDoc = await transaction.get(roomRef);
+            if (!roomDoc.exists) throw "Stanza non trovata!";
 
-        const players = data.players;
-        const newPlayerId = 'p' + (Object.keys(players).length + 1);
-        myPlayerId = newPlayerId;
+            const data = roomDoc.data();
+            if (data.status !== 'lobby') throw "Gioco già iniziato!";
 
-        await db.collection('rooms').doc(roomId).update({
-            [`players.${newPlayerId}`]: { name: playerName, role: 'Villico', alive: true }
+            const players = data.players;
+            // Verifica se il giocatore è già presente (per nome, semplice controllo)
+            const existingPlayer = Object.values(players).find(p => p.name === playerName);
+            if (existingPlayer) {
+                // Se esiste già, riutilizziamo l'ID esistente (reconnect implicito)
+                myPlayerId = Object.keys(players).find(id => players[id].name === playerName);
+            } else {
+                const newPlayerId = 'p' + (Object.keys(players).length + 1);
+                myPlayerId = newPlayerId;
+                transaction.update(roomRef, {
+                    [`players.${newPlayerId}`]: { name: playerName, role: 'Villico', alive: true }
+                });
+            }
         });
 
         currentRoomId = roomId;
+        localStorage.setItem('lupus_roomId', roomId);
+        localStorage.setItem('lupus_myPlayerId', myPlayerId);
+        localStorage.setItem('lupus_isNarrator', 'false');
+        localStorage.setItem('lupus_playerName', playerName);
+
         setupRoomListener(roomId);
         displays.roomId.textContent = roomId;
         showScreen('lobby');
