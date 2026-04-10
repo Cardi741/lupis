@@ -78,7 +78,8 @@ const buttons = {
     revealRole: document.getElementById('btn-reveal-role'),
     nextPhase: document.getElementById('btn-next-phase'),
     reset: document.getElementById('btn-reset'),
-    testDB: document.getElementById('btn-test-db')
+    testDB: document.getElementById('btn-test-db'),
+    newGame: document.getElementById('btn-new-game')
 };
 
 const displays = {
@@ -254,11 +255,17 @@ buttons.revealRole.addEventListener('click', () => {
     buttons.revealRole.textContent = displays.roleCard.classList.contains('hidden-role') ? "Premi per rivelare" : "Nascondi";
 });
 
-// Listener per la stanza (placeholder per ora)
+// Listener per la stanza
 function setupRoomListener(roomId) {
     db.collection('rooms').doc(roomId).onSnapshot((doc) => {
         if (!doc.exists) return;
         const data = doc.data();
+
+        // Se lo stato torna a lobby mentre siamo in gioco, forziamo il ritorno alla lobby
+        if (data.status === 'lobby' && !screens.game.classList.contains('hidden')) {
+            showScreen('lobby');
+        }
+
         renderLobby(data.players);
 
         if (data.status === 'playing' && screens.game.classList.contains('hidden')) {
@@ -349,6 +356,37 @@ async function togglePlayerStatus(playerId) {
     });
 }
 
+// Nuova Partita / Reset Stanza (Solo Narratore)
+buttons.newGame.addEventListener('click', async () => {
+    if (!isNarrator) return;
+    if (!confirm("Vuoi terminare questa partita e tornare alla lobby?")) return;
+
+    try {
+        const roomRef = db.collection('rooms').doc(currentRoomId);
+        const doc = await roomRef.get();
+        const players = doc.data().players;
+
+        const updates = {
+            status: 'lobby',
+            phase: 'Preparazione',
+            phaseIndex: 0,
+            gameLog: 'Partita terminata dal narratore.'
+        };
+
+        // Reset stato vivi e ruoli base
+        Object.keys(players).forEach(id => {
+            updates[`players.${id}.alive`] = true;
+            if (players[id].role !== 'Narratore') {
+                updates[`players.${id}.role`] = 'Villico'; // Reset temporaneo
+            }
+        });
+
+        await roomRef.update(updates);
+    } catch (error) {
+        alert("Errore nel reset: " + error.message);
+    }
+});
+
 function startClientGame(data) {
     showScreen('game');
     const myData = data.players[myPlayerId];
@@ -364,12 +402,24 @@ function updateGameUI(data) {
     const myData = data.players[myPlayerId];
     displays.gamePhase.textContent = data.phase;
 
+    // Controllo Condizioni di Vittoria (Visualizzazione nel log per tutti)
+    const alivePlayers = Object.values(data.players).filter(p => p.alive && p.role !== 'Narratore');
+    const aliveLupi = alivePlayers.filter(p => p.role === 'Rodolfo (Lupo)');
+    const aliveOthers = alivePlayers.filter(p => p.role !== 'Rodolfo (Lupo)');
+
+    let victoryMsg = "";
+    if (aliveLupi.length === 0 && data.status === 'playing') {
+        victoryMsg = "🏆 I Villici hanno vinto! Tutti i lupi sono stati eliminati.";
+    } else if (aliveLupi.length >= aliveOthers.length && data.status === 'playing') {
+        victoryMsg = "🐺 I Lupi hanno vinto! Ormai controllano il villaggio.";
+    }
+
     if (!myData.alive) {
-        displays.gameInfo.textContent = "Sei morto. Spetta ai vivi decidere il tuo destino...";
+        displays.gameInfo.textContent = victoryMsg || "Sei morto. Spetta ai vivi decidere il tuo destino...";
         displays.gameInfo.style.color = "var(--accent-color)";
     } else {
-        displays.gameInfo.textContent = data.gameLog || "";
-        displays.gameInfo.style.color = "var(--text-color)";
+        displays.gameInfo.textContent = victoryMsg || data.gameLog || "";
+        displays.gameInfo.style.color = victoryMsg ? "var(--success-color)" : "var(--text-color)";
     }
 
     if (isNarrator) {
