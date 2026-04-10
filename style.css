@@ -154,6 +154,35 @@ button.secondary {
     margin-top: 10px;
 }
 
+#role-selection {
+    margin: 15px 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.role-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.role-option input {
+    width: 60px;
+    margin-bottom: 0;
+    padding: 5px;
+}
+
+#game-phase {
+    color: var(--accent-color);
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+}
+
 .player-item {
     display: flex;
     justify-content: space-between;

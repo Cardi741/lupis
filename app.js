@@ -34,6 +34,16 @@ if (typeof firebase === 'undefined') {
 }
 
 // Inizializzazione Firebase
+const GAME_PHASES = [
+    "🌖 Giorno: Sveglia tutti! Chi è morto? Discutete...",
+    "⚖️ Votazione: Chi volete mandare al rogo?",
+    "🌑 Notte: Tutti a dormire...",
+    "🐺 Rodolfo (Lupo): Chi vuoi uccidere?",
+    "🛡️ Farell (Bodyguard): Chi vuoi proteggere?",
+    "🔮 Leo AZ (Veggente): Di chi vuoi sapere il ruolo?",
+    "🏠 Marco P (Protettore): Con chi sei a casa?"
+];
+
 let db;
 logToUI("Inizializzazione Firebase...");
 try {
@@ -74,7 +84,14 @@ const screens = {
 
 const inputs = {
     playerName: document.getElementById('player-name'),
-    roomId: document.getElementById('room-id')
+    roomId: document.getElementById('room-id'),
+    counts: {
+        lupo: document.getElementById('count-lupo'),
+        veggente: document.getElementById('count-veggente'),
+        protettore: document.getElementById('count-protettore'),
+        bodyguard: document.getElementById('count-bodyguard'),
+        villico: document.getElementById('count-villico')
+    }
 };
 
 const buttons = {
@@ -308,58 +325,51 @@ buttons.startGame.addEventListener('click', async () => {
         const players = doc.data().players;
         const playerIds = Object.keys(players).filter(id => players[id].role !== 'Narratore');
 
-        if (playerIds.length < 3) return alert("Servono almeno 3 giocatori (escluso il narratore)!");
+        // Calcolo ruoli scelti
+        const roles = [];
+        for (let i = 0; i < parseInt(inputs.counts.lupo.value); i++) roles.push('Rodolfo (Lupo)');
+        for (let i = 0; i < parseInt(inputs.counts.veggente.value); i++) roles.push('Leo AZ (Veggente)');
+        for (let i = 0; i < parseInt(inputs.counts.protettore.value); i++) roles.push('Marco P (Protettore)');
+        for (let i = 0; i < parseInt(inputs.counts.bodyguard.value); i++) roles.push('Farell (Bodyguard)');
+        for (let i = 0; i < parseInt(inputs.counts.villico.value); i++) roles.push('Piaciarolo (Villico)');
+
+        if (roles.length !== playerIds.length) {
+            return alert(`Errore: Hai selezionato ${roles.length} ruoli per ${playerIds.length} giocatori!`);
+        }
 
         // Assegnazione Ruoli
-        const roles = assignRoles(playerIds.length);
+        const shuffledRoles = roles.sort(() => Math.random() - 0.5);
         const shuffledIds = playerIds.sort(() => Math.random() - 0.5);
 
         const updates = {};
         shuffledIds.forEach((id, index) => {
-            updates[`players.${id}.role`] = roles[index];
+            updates[`players.${id}.role`] = shuffledRoles[index];
         });
         updates.status = 'playing';
-        updates.phase = 'Notte 1';
-        updates.gameLog = 'Il gioco è iniziato. È notte...';
+        updates.phaseIndex = 2; // Inizia dalla Notte (GAME_PHASES[2])
+        updates.phase = GAME_PHASES[2];
+        updates.gameLog = 'Il gioco è iniziato!';
 
         await roomRef.update(updates);
     } catch (error) {
+        logToUI("ERRORE START: " + error.message);
         console.error("Errore inizio gioco:", error);
     }
 });
-
-function assignRoles(count) {
-    let roles = [];
-    if (count >= 3) {
-        roles.push('Lupo');
-        roles.push('Veggente');
-        for (let i = 0; i < count - 2; i++) {
-            roles.push('Villico');
-        }
-    }
-    // Aggiusta i lupi per gruppi più grandi
-    if (count >= 7) roles[2] = 'Lupo';
-    if (count >= 11) roles[3] = 'Lupo';
-
-    return roles.sort(() => Math.random() - 0.5);
-}
 
 // Prossima Fase (Solo Narratore)
 buttons.nextPhase.addEventListener('click', async () => {
     if (!isNarrator) return;
     const roomRef = db.collection('rooms').doc(currentRoomId);
     const doc = await roomRef.get();
-    const currentPhase = doc.data().phase;
+    const data = doc.data();
 
-    let nextPhase = "";
-    if (currentPhase.includes("Notte")) {
-        nextPhase = currentPhase.replace("Notte", "Giorno");
-    } else {
-        const num = parseInt(currentPhase.match(/\d+/)[0]);
-        nextPhase = `Notte ${num + 1}`;
-    }
+    let nextIndex = (data.phaseIndex + 1) % GAME_PHASES.length;
 
-    await roomRef.update({ phase: nextPhase });
+    await roomRef.update({
+        phaseIndex: nextIndex,
+        phase: GAME_PHASES[nextIndex]
+    });
 });
 
 async function togglePlayerStatus(playerId) {
@@ -387,7 +397,7 @@ function startClientGame(data) {
 
 function updateGameUI(data) {
     const myData = data.players[myPlayerId];
-    displays.gamePhase.textContent = `Fase: ${data.phase}`;
+    displays.gamePhase.textContent = data.phase;
 
     if (!myData.alive) {
         displays.gameInfo.textContent = "Sei morto. Spetta ai vivi decidere il tuo destino...";
