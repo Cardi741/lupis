@@ -459,16 +459,16 @@ function updateGameUI(data) {
     const myData = data.players[myPlayerId];
     displays.gamePhase.textContent = data.phase;
 
-    // Controllo Condizioni di Vittoria (Visualizzazione nel log per tutti)
+    // Controllo Condizioni di Vittoria (Solo suggerimento visivo)
     const alivePlayers = Object.values(data.players).filter(p => p.alive && p.role !== 'Narratore');
-    const aliveLupi = alivePlayers.filter(p => p.role === 'Rodolfo (Lupo)');
-    const aliveOthers = alivePlayers.filter(p => p.role !== 'Rodolfo (Lupo)');
+    const aliveLupi = alivePlayers.filter(p => p.role.includes('Lupo'));
+    const aliveOthers = alivePlayers.filter(p => !p.role.includes('Lupo'));
 
     let victoryMsg = "";
     if (aliveLupi.length === 0 && data.status === 'playing') {
-        victoryMsg = "🏆 I Villici hanno vinto! Tutti i lupi sono stati eliminati.";
+        victoryMsg = "🏆 I Villici sembrano aver vinto! Tutti i lupi sono eliminati.";
     } else if (aliveLupi.length >= aliveOthers.length && data.status === 'playing') {
-        victoryMsg = "🐺 I Lupi hanno vinto! Ormai controllano il villaggio.";
+        victoryMsg = "🐺 I Lupi sembrano aver vinto! Hanno la parità.";
     }
 
     if (!myData.alive) {
