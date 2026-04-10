@@ -41,6 +41,11 @@ try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     logToUI("Firebase OK. Firestore OK.");
+
+    // Verifica se Firestore è effettivamente accessibile
+    if (!db || typeof db.collection !== 'function') {
+        logToUI("ATTENZIONE: Firestore non sembra inizializzato correttamente.");
+    }
 } catch (e) {
     logToUI("ERRORE INIT: " + e.message);
     alert("Errore inizializzazione Firebase: " + e.message);

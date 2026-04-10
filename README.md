@@ -8,7 +8,10 @@ Per far funzionare l'app, devi configurare il tuo progetto Firebase:
 
 1.  **Crea un progetto:** Vai su [Firebase Console](https://console.firebase.google.com/) e crea un nuovo progetto.
 2.  **Aggiungi Firestore:** Nel menu a sinistra, clicca su "Firestore Database" e poi su "Crea database". Scegli una posizione vicina a te.
-3.  **Imposta le Regole:** Vai nella scheda "Rules" di Firestore e incolla il contenuto del file `firestore.rules` incluso in questa cartella. Clicca su "Pubblica".
+3.  **Imposta le Regole (ATTENZIONE):**
+    *   Assicurati di essere nella sezione **Firestore Database** (icona arancione con fiammella bianca).
+    *   **NON** usare "Realtime Database" (icona grigia con parentesi graffe), poiché le regole sono diverse e daranno errore.
+    *   Vai nella scheda "Rules" di **Firestore** e incolla il contenuto del file `firestore.rules` incluso in questa cartella. Clicca su "Pubblica".
 4.  **Configura l'App:**
     *   Registra una nuova "Web App" nelle impostazioni del progetto.
     *   Copia l'oggetto `firebaseConfig` fornito da Firebase.
