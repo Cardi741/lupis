@@ -19,14 +19,13 @@ window.onerror = function(message, source, lineno, colno, error) {
 
 // Configurazione Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyCSU_U5KXsQXaS7mCwjpalPK8uVV855reQ",
-  authDomain: "tabula-a5c63.firebaseapp.com",
-  databaseURL: "https://tabula-a5c63-default-rtdb.firebaseio.com",
-  projectId: "tabula-a5c63",
-  storageBucket: "tabula-a5c63.firebasestorage.app",
-  messagingSenderId: "449275965106",
-  appId: "1:449275965106:web:fd7b3ae960ead4f7cb63ab",
-  measurementId: "G-964EFP2ZN1"
+  apiKey: "AIzaSyBT1o5tEsw3sEfPkCf3Me8E5pg9r_ZhS_M",
+  authDomain: "lupus-d3632.firebaseapp.com",
+  projectId: "lupus-d3632",
+  storageBucket: "lupus-d3632.firebasestorage.app",
+  messagingSenderId: "821941195440",
+  appId: "1:821941195440:web:73d1ac175a5da7a52de175",
+  measurementId: "G-32321CJM9P"
 };
 
 // Verifica che Firebase sia caricato
