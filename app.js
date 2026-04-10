@@ -459,24 +459,13 @@ function updateGameUI(data) {
     const myData = data.players[myPlayerId];
     displays.gamePhase.textContent = data.phase;
 
-    // Controllo Condizioni di Vittoria (Solo suggerimento visivo)
-    const alivePlayers = Object.values(data.players).filter(p => p.alive && p.role !== 'Narratore');
-    const aliveLupi = alivePlayers.filter(p => p.role.includes('Lupo'));
-    const aliveOthers = alivePlayers.filter(p => !p.role.includes('Lupo'));
-
-    let victoryMsg = "";
-    if (aliveLupi.length === 0 && data.status === 'playing') {
-        victoryMsg = "🏆 I Villici sembrano aver vinto! Tutti i lupi sono eliminati.";
-    } else if (aliveLupi.length >= aliveOthers.length && data.status === 'playing') {
-        victoryMsg = "🐺 I Lupi sembrano aver vinto! Hanno la parità.";
-    }
-
+    // Logica di Vittoria rimossa come richiesto (100% manuale del narratore)
     if (!myData.alive) {
-        displays.gameInfo.textContent = victoryMsg || "Sei morto. Spetta ai vivi decidere il tuo destino...";
+        displays.gameInfo.textContent = "Sei morto. Spetta ai vivi decidere il tuo destino...";
         displays.gameInfo.style.color = "var(--accent-color)";
     } else {
-        displays.gameInfo.textContent = victoryMsg || data.gameLog || "";
-        displays.gameInfo.style.color = victoryMsg ? "var(--success-color)" : "var(--text-color)";
+        displays.gameInfo.textContent = data.gameLog || "";
+        displays.gameInfo.style.color = "var(--text-color)";
     }
 
     if (isNarrator) {

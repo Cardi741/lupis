@@ -159,15 +159,21 @@ button.secondary:hover {
 }
 
 .hidden-role {
-    background: rgba(0,0,0,0.4);
-    color: transparent;
-    border: 2px dashed #444;
-    transform: rotateY(0deg);
+    background: linear-gradient(135deg, #1a1a1a 25%, #2a2a2a 25%, #2a2a2a 50%, #1a1a1a 50%, #1a1a1a 75%, #2a2a2a 75%, #2a2a2a 100%);
+    background-size: 40px 40px;
+    color: transparent !important;
+    border: 3px solid #333;
+    transform: none;
+    text-shadow: none !important;
 }
 
 .hidden-role::after {
-    content: "???";
-    color: #555;
+    content: "Clicca per scoprire il tuo destino";
+    color: #888;
+    font-size: 1rem;
+    font-family: 'Lato', sans-serif;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 #game-status {
