@@ -80,7 +80,8 @@ const buttons = {
     reset: document.getElementById('btn-reset'),
     testDB: document.getElementById('btn-test-db'),
     newGame: document.getElementById('btn-new-game'),
-    leaveRoom: document.getElementById('btn-leave-room')
+    leaveRoom: document.getElementById('btn-leave-room'),
+    leaveGame: document.getElementById('btn-leave-game')
 };
 
 const displays = {
@@ -129,8 +130,8 @@ buttons.reset.addEventListener('click', () => {
     }
 });
 
-// Leave Room logic
-buttons.leaveRoom.addEventListener('click', async () => {
+// Leave Room logic shared function
+async function handleLeaveRoom() {
     if (!currentRoomId || !myPlayerId) return;
 
     try {
@@ -138,12 +139,12 @@ buttons.leaveRoom.addEventListener('click', async () => {
         const doc = await roomRef.get();
         const data = doc.data();
 
-        // Se la partita è in corso, i giocatori non possono uscire
+        let confirmMsg = "Vuoi uscire dalla stanza?";
         if (data.status === 'playing' && !isNarrator) {
-            return alert("La partita è in corso! Non puoi scappare ora... finisci il gioco!");
+            confirmMsg = "⚠️ ATTENZIONE: La partita è in corso! Se esci ora abbandonerai i tuoi amici e non potrai rientrare facilmente. Vuoi davvero uscire?";
         }
 
-        if (!confirm("Vuoi uscire dalla stanza?")) return;
+        if (!confirm(confirmMsg)) return;
 
         if (isNarrator) {
             if (confirm("Sei il narratore. Se esci, la stanza verrà chiusa per tutti. Procedere?")) {
@@ -164,7 +165,12 @@ buttons.leaveRoom.addEventListener('click', async () => {
         localStorage.clear();
         location.reload();
     }
-});
+}
+
+buttons.leaveRoom.addEventListener('click', handleLeaveRoom);
+if (buttons.leaveGame) {
+    buttons.leaveGame.addEventListener('click', handleLeaveRoom);
+}
 
 // Test Database logic
 buttons.testDB.addEventListener('click', async () => {

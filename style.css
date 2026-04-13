@@ -262,7 +262,7 @@ button.secondary:hover {
     border: 1px solid #555 !important;
 }
 
-#btn-leave-room {
+#btn-leave-room, #btn-leave-game {
     margin-top: 20px;
 }
 
